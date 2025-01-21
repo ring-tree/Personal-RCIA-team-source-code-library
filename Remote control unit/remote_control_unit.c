@@ -11,8 +11,9 @@
 
 
 /* Internal Data-------------------------------------------------------------- */
-static uint8_t sbus_rx_buffer[RC_FRAME_LENGTH];  /* A variable that stores data received from the remote control */
-static RC_Ctl_t RC_CtrlData;                     /* The RC_Ctl_t struct variable that stores the decoded received data */
+uint8_t sbus_rx_buffer[RC_FRAME_LENGTH];  /* A variable that stores data received from the remote control */
+RC_Ctl_t RC_CtrlData;                     /* The RC_Ctl_t struct variable that stores the decoded received data */
+RC_Ctl_t_AT RC_CtrlData_AT;
 
 static uint32_t Detection = 1;        /* Total value of sent frames to determine whether the connection is disconnected */
 static uint32_t Last_Detection = 0;   /* Historical cumulative value */ 
@@ -29,27 +30,28 @@ uint16_t WireBreakDetection(void)
 {
     if (Detection == Last_Detection) {
         MX_USART1_UART_Init();
+        Last_Detection = Detection;
         return RECEIVER_STATE_UNSYNC;
     } else {
+        Last_Detection = Detection;
         return RECEIVER_STATE_SYNC;
     }
-    Last_Detection = Detection;
 }
 
-/**
- * @brief Callback function for the TIM period elapsed.
- *
- * @param htim Pointer to a TIM_HandleTypeDef structure that contains
- *             the configuration information for the specified TIM module.
- *
- * @return The return value of the WireBreakDetection function.
- */
-uint16_t HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance == TIM2_BASE) {
-        return WireBreakDetection();
-    }
-}
+// /**
+//  * @brief Callback function for the TIM period elapsed.
+//  *
+//  * @param htim Pointer to a TIM_HandleTypeDef structure that contains
+//  *             the configuration information for the specified TIM module.
+//  *
+//  * @return None
+//  */
+// void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+// {
+    // if (htim == &htim2) {
+        // ......
+    // }
+// }
 
 /**
  * @brief  Remote control unit data processing.
@@ -68,16 +70,30 @@ void RemoteDataProcess(uint8_t* rcdata)
     RC_CtrlData.ch2 = (((int16_t)rcdata[2] >> 6) | ((int16_t)rcdata[3] << 2) | ((int16_t)rcdata[4] << 10)) & 0x07FF;
     RC_CtrlData.ch3 = (((int16_t)rcdata[4] >> 1) | ((int16_t)rcdata[5]<<7)) & 0x07FF;
 
+    RC_CtrlData_AT.ch0 = (RC_CtrlData.ch0 - 1024) * (8192 / 660);
+    RC_CtrlData_AT.ch1 = (RC_CtrlData.ch1 - 1024) * (8192 / 660);
+    RC_CtrlData_AT.ch2 = (RC_CtrlData.ch2 - 1024) * (8192 / 660);
+    RC_CtrlData_AT.ch3 = (RC_CtrlData.ch3 - 1024) * (8192 / 660);
+
     RC_CtrlData.s1 = ((rcdata[5] >> 4) & 0x000C) >> 2;
     RC_CtrlData.s2 = ((rcdata[5] >> 4) & 0x0003);
+
+    RC_CtrlData_AT.s1 = RC_CtrlData.s1;
+    RC_CtrlData_AT.s2 = RC_CtrlData.s2;
 }
 
+/**
+ * @brief This function is the callback function for the UART reception complete event.
+ *        It increments the detection counter, processes the received data, and initiates a DMA transfer.
+ * 
+ * @param huart Pointer to a UART_HandleTypeDef structure that contains the configuration information for the specified UART.
+ */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    if (huart->Instance == USART1) {
-        Detection++;        
+    if (huart->Instance == USART3) {
+        Detection++;
         RemoteDataProcess(sbus_rx_buffer);
-        HAL_UART_Receive_DMA(&huart1, sbus_rx_buffer, RC_FRAME_LENGTH);
+        HAL_UART_Receive_DMA(&huart3, sbus_rx_buffer, RC_FRAME_LENGTH);
     }
 }
 

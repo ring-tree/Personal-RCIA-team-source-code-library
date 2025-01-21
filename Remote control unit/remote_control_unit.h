@@ -5,12 +5,20 @@
  * @brief          : Header for remote_control_unit.c file
  * ****************************************************************************
  */
+#ifndef __REMOTE_CONTROL_UNIT_H
+#define __REMOTE_CONTROL_UNIT_H
+
+/* Related serial port configuration */
+/*   huart3.Init.BaudRate = 100000;
+     huart3.Init.WordLength = UART_WORDLENGTH_9B;
+     huart3.Init.StopBits = UART_STOPBITS_1;
+     huart3.Init.Parity = UART_PARITY_EVEN;  */
 
 /* include-------------------------------------------------------------------- */
-#include "main.h"
+#include "stm32f4xx_hal.h"
 #include "usart.h"
 #include "tim.h"
-
+#include "pid.h"
 
 /* define--------------------------------------------------------------------- */
 /* RC Channel Definition */
@@ -48,4 +56,26 @@ typedef struct Remote_control
  * @}
  */
 
+typedef struct Remote_control_AfterTreatment 
+{
+    fint32_t ch0;
+    fint32_t ch1;
+    fint32_t ch2;
+    fint32_t ch3;
+    fint32_t s1;
+    fint32_t s2;
+} RC_Ctl_t_AT;
 
+/* Global variable------------------------------------------------------------- */
+extern uint8_t sbus_rx_buffer[RC_FRAME_LENGTH];
+extern RC_Ctl_t RC_CtrlData;
+extern RC_Ctl_t_AT RC_CtrlData_AT;
+
+
+/* Function declaration------------------------------------------------------- */
+uint16_t WireBreakDetection(void);
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
+void RemoteDataProcess(uint8_t* rcdata);
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+
+#endif /* __REMOTE_CONTROL_UNIT_H */
