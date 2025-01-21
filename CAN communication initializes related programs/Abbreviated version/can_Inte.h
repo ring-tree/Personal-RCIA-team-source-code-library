@@ -34,6 +34,11 @@ typedef struct CAN_ReceivesDataMember
 /* pid_ActualData[6]    > Motor temperature <                                                            */
 /* pid_ActualData[7]    > NULL <                                                                         */
 
+/* CAN pin number */
+/* F407IGHx */
+/* CAN1_Rx PD0 */
+/* CAN1_Tx PD1 */
+
 
 /* define--------------------------------------------------------------------- */
 /** @defgroup CAN_Tx_Motor_ID Motor ID 

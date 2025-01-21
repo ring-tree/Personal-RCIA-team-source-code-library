@@ -170,5 +170,4 @@ void CAN_Filter_Config(CAN_HandleTypeDef *hcan, uint32_t FIFO)
     {
       HAL_CAN_ActivateNotification(hcan, CAN_IT_RX_FIFO1_MSG_PENDING);
     }
-
   }
